@@ -3,3 +3,6 @@ __pycache__/
 *.pyc
 exports/
 .streamlit/
+.env
+ml/model.pkl
+ml/data.csv
