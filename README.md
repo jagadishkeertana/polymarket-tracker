@@ -11,6 +11,53 @@ A real-time prediction market intelligence platform and machine learning forecas
 - **Automated Volatility Alerts:** Background email notifications (SMTP/SSL) when markets experience sharp price swings ($\ge 20\%$).
 - **Offline Data Exports:** Structured CSV and JSON datasets for offline financial backtesting.
 
+## 🏛️ High-Level Design Architecture
+
+```mermaid
+flowchart TD
+    subgraph ExternalSources["External Public Data Sources"]
+        GammaAPI["Polymarket Gamma API (Markets, Categories, 24h Vol)"]
+        CLOBAPI["Polymarket CLOB API (Order Books, Bids/Asks)"]
+    end
+
+    subgraph IngestionLayer["Ingestion & Client Layer"]
+        APIClient["API Client (client/api.py)"]
+        Collector["Snapshot Collector (saver/dataset_collector.py)"]
+        
+        GammaAPI & CLOBAPI --> APIClient
+        APIClient --> Collector
+    end
+
+    subgraph ProcessingLayer["Data Pipelines & ML Engine"]
+        HistoricalData[("Historical Records (ml/data.csv)")]
+        TrainScript["ML Trainer (ml/train.py)"]
+        ModelArtifact["Trained scikit-learn Model (ml/model.pkl)"]
+        Predictor["Resolution Probability Predictor (ml/predict.py)"]
+        AlertEngine["Volatility Checker (alerts/email_alert.py)"]
+        
+        Collector --> HistoricalData
+        HistoricalData --> TrainScript
+        TrainScript --> ModelArtifact
+        ModelArtifact --> Predictor
+        APIClient -->|"Price & Volume Stream"| AlertEngine
+    end
+
+    subgraph DeliveryLayer["Presentation & Notification Sinks"]
+        StreamlitUI["Streamlit Web Dashboard (dashboard.py)"]
+        PlotlyCharts["Plotly 24h Volume & Price Charts"]
+        RichCLI["Terminal Tables (display/tables.py)"]
+        EmailAlerts["SMTP Mail Server (Gmail SSL Alerts >= 20% swings)"]
+        FileExport[("Saved Exports (CSV / JSON)")]
+
+        APIClient --> StreamlitUI
+        Predictor --> StreamlitUI
+        StreamlitUI --> PlotlyCharts
+        APIClient --> RichCLI
+        AlertEngine --> EmailAlerts
+        APIClient --> FileExport
+    end
+```
+
 ## 🛠️ Tech Stack
 
 - **Python 3.11**
